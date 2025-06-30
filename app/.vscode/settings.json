@@ -1,0 +1,17 @@
+{
+    "cSpell.words": [
+        "anyio",
+        "beautifulsoup",
+        "certifi",
+        "fastapi",
+        "idna",
+        "lxml",
+        "psycopg",
+        "pydantic",
+        "sniffio",
+        "soupsieve",
+        "starlette",
+        "urllib",
+        "uvicorn"
+    ]
+}

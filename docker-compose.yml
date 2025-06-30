@@ -1,0 +1,81 @@
+
+services:
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - db
+    environment:
+      # All environment variables should reference values from .env or CI/CD
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/code
+    restart: unless-stopped
+    volumes:
+      - .:/code
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+
+  celery:
+    build: .
+    container_name: celery_worker
+    depends_on:
+      - redis
+      - db
+    command: celery -A app.celery_config.celery_app worker --loglevel=INFO
+    environment:
+      # Use environment variables for consistency
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONPATH=/code
+    volumes:
+      - .:/code
+    restart: unless-stopped
+
+  celery_beat:
+    build: .
+    container_name: celery_beat_scheduler
+    command: celery -A app.celery_config.celery_app beat --loglevel=INFO
+    depends_on:
+      - redis
+      - db
+      - celery
+    environment:
+      # Use environment variables for consistency
+      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=${DATABASE_URL} # Corrected to use = instead of :
+      - PYTHONPATH=/code
+    volumes:
+      - .:/code
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379" # Expose Redis port
+    # No environment variables needed here unless you have specific Redis config
+
+  db:
+    image: postgres:16
+    container_name: jobpostgres
+    ports:
+      - "5432:5432" # Expose Postgres port
+    environment:
+      # Use environment variables for PostgreSQL credentials as well
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - jobpostgres_data:/var/lib/postgresql/data # Persistent data volume
+
+volumes:
+  jobpostgres_data: # Define the named volume

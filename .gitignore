@@ -1,0 +1,12 @@
+# .gitignore content
+.env
+.venv/
+__pycache__/
+*.pyc
+*.sqlite3
+*.db
+/data/ # if you have a local data directory for the DB
+.DS_Store
+npm-debug.log
+debug.log
+*.log
