@@ -5,16 +5,18 @@ services:
     container_name: fastapi_app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
+      interval: 10s # More frequent check once dependencies are up
       timeout: 5s
-      retries: 3
+      retries: 5 # More retries to account for initial application startup
+      start_period: 30s # Crucial: Give FastAPI more time to initialize before checks begin
     ports:
       - "8000:8000"
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_healthy # Wait for Redis health check to pass
+      db:
+        condition: service_healthy   # Wait for DB health check to pass
     environment:
-      # All environment variables should reference values from .env or CI/CD
       - REDIS_URL=${REDIS_URL}
       - DATABASE_URL=${DATABASE_URL}
       - PYTHONPATH=/code
@@ -23,16 +25,16 @@ services:
       - .:/code
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-
   celery:
     build: .
     container_name: celery_worker
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_healthy # Wait for Redis health check to pass
+      db:
+        condition: service_healthy   # Wait for DB health check to pass
     command: celery -A app.celery_config.celery_app worker --loglevel=INFO
     environment:
-      # Use environment variables for consistency
       - REDIS_URL=${REDIS_URL}
       - DATABASE_URL=${DATABASE_URL}
       - PYTHONPATH=/code
@@ -45,13 +47,15 @@ services:
     container_name: celery_beat_scheduler
     command: celery -A app.celery_config.celery_app beat --loglevel=INFO
     depends_on:
-      - redis
-      - db
-      - celery
+      redis:
+        condition: service_healthy # Wait for Redis health check to pass
+      db:
+        condition: service_healthy   # Wait for DB health check to pass
+      celery:
+        condition: service_started # Only 'service_started' is applicable for celery worker
     environment:
-      # Use environment variables for consistency
       - REDIS_URL=${REDIS_URL}
-      - DATABASE_URL=${DATABASE_URL} # Corrected to use = instead of :
+      - DATABASE_URL=${DATABASE_URL}
       - PYTHONPATH=/code
     volumes:
       - .:/code
@@ -61,21 +65,30 @@ services:
     image: redis:7-alpine
     container_name: redis
     ports:
-      - "6379:6379" # Expose Redis port
-    # No environment variables needed here unless you have specific Redis config
+      - "6379:6379"
+    healthcheck: # Add a health check for Redis
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s # Check frequently, Redis starts fast
+      timeout: 3s
+      retries: 5
 
   db:
     image: postgres:16
     container_name: jobpostgres
     ports:
-      - "5432:5432" # Expose Postgres port
+      - "5432:5432"
     environment:
-      # Use environment variables for PostgreSQL credentials as well
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - jobpostgres_data:/var/lib/postgresql/data # Persistent data volume
+      - jobpostgres_data:/var/lib/postgresql/data
+    healthcheck: # Add a health check for PostgreSQL
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"] # Note $$ for env var
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Give Postgres some initial time to come up
 
 volumes:
-  jobpostgres_data: # Define the named volume
+  jobpostgres_data:

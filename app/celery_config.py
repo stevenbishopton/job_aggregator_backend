@@ -22,6 +22,7 @@ celery_app.conf.update(
     enable_utc=True,
 )
 
+celery_app.conf.broker_connection_retry_on_startup = True
 # Periodic task schedule
 celery_app.conf.beat_schedule = {
     # Scrape every 6 hours

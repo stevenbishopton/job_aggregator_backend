@@ -1,3 +1,4 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.db import models
 from app.schemas.job import JobCreate
@@ -50,18 +51,16 @@ def search_jobs(
     jobs_query = db.query(Job)
 
     if query:
-        jobs_query = jobs_query.filter(Job.title.ilike(f"%{query}%"))
-    
-    if location:
-        jobs_query = jobs_query.filter(Job.location.ilike(f"%{location}%"))
-    
-    if job_type:
-        jobs_query = jobs_query.filter(Job.job_type.ilike(f"%{job_type}%"))
-
-    if tags:
-        tag_list = [tag.strip().lower() for tag in tags.split(",")]
-        for tag in tag_list:
-            jobs_query = jobs_query.filter(Job.tags.ilike(f"%{tag}%"))
-
+        jobs_query = jobs_query.filter(
+            or_(
+                Job.title.ilike(f"%{query}%"),
+                Job.company_name.ilike(f"%{query}%"),
+                Job.location.ilike(f"%{query}%"),
+                Job.tags.ilike(f"%{query}%"),
+                Job.job_type.ilike(f"%{query}%"),
+                Job.salary.ilike(f"%{query}%"),
+                Job.source.ilike(f"%{query}%"),
+            )
+        )
 
     return jobs_query.offset(skip).limit(limit).all()

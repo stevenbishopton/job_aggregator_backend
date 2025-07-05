@@ -22,7 +22,7 @@ def read_jobs(
     location: Optional[str] = Query(None),
     job_type: Optional[str] = Query(None),
     tags: Optional[str] = Query(None),
-    limit: int = 20,
+    limit: int = 100,
     skip: int = 0,
     db: Session = Depends(get_db)
 ):
