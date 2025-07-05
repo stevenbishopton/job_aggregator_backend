@@ -8,8 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Dev only: auto-create tables
-Base.metadata.create_all(bind=engine)
+# Only create tables in development
+if os.getenv("ENVIRONMENT", "development") == "development":
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Job Aggregator API",
@@ -17,10 +18,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS setup
+# CORS setup - update with your frontend URL in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in prod!
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://your-frontend-domain.vercel.app"  # Remove this in production and specify exact domains
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

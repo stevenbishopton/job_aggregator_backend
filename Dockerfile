@@ -1,5 +1,3 @@
-
-
 FROM python:3.11-slim
 
 WORKDIR /code
@@ -12,7 +10,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Use the PORT environment variable that Render provides
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]
 
 ENV PYTHONPATH=/code
 
