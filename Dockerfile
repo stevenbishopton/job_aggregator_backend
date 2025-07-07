@@ -10,8 +10,12 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-# Use the PORT environment variable that Render provides
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
+# Make startup script executable
+RUN chmod +x start.sh
 
+# Use environment variable to determine what to run
 ENV PYTHONPATH=/code
+
+# Default to startup script, but can be overridden
+CMD ["./start.sh"]
 
