@@ -23,7 +23,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Local development
-        "https://your-frontend-domain.vercel.app"  # Remove this in production and specify exact domains
+        "https://job-aggregator-frontend.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
